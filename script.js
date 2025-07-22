@@ -236,25 +236,46 @@ if (cantidadSacada > 0) {
   data.tiempoPorProducto = tiempoFormateado;
   guardarPedidos();
 
-  fetch("https://api.sheetbest.com/sheets/3e63ab90-8471-42e0-8f80-b4c67b419fcd", {
-    method: "POST",
-    mode: "cors",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      "Codigo P": data.codigo,
-      "Sacador ": data.sacador,
-      "CantidadProductos ": data.cantidad,
-      "HoraInicio ": new Date(data.startTimestamp).toISOString(),
-      "HoraFin ": new Date(data.endTimestamp).toISOString(),
-      "TiempoTotal ": formatTime(Math.floor(duracionMs / 1000)),
-      "Tiempoitms": tiempoFormateado
-    })
-  })
-    .then(res => res.text())
-    .then(text => console.log("✅ Datos enviados a Sheets vía Sheet.best:", text))
-    .catch(err => console.error("❌ Error al enviar a Sheet.best:", err));
+  const pedidoData = {
+  pedido: parseInt(data.codigo), // "Codigo P" → pedido
+  sacador: data.sacador,         // "Sacador " → sacador
+  cantidad_items: parseInt(data.cantidad), // "CantidadProductos " → cantidad_items
+  horaInicio: new Date(data.startTimestamp).toISOString(), // "HoraInicio "
+  horaFin: new Date(data.endTimestamp).toISOString(),      // "HoraFin "
+  tiempoTotalSegundos: Math.floor(duracionMs / 1000), // "TiempoTotal " → en segundos
+  tiempoitms: tiempoFormateado  // Ej: "00:43"
+};
+
+async function enviarApi(pedidoData) {
+  const apiUrl = "https://localhost:7053/api/Pedidos/Crear";
+
+  // Validar si la URL comienza con HTTPS
+  if (!apiUrl.startsWith("https://")) {
+    console.error("❌ Error: La URL no es segura (HTTPS requerido)");
+    return;
+  }
+
+  try {
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(pedidoData)
+    });
+
+    if (!res.ok) {
+      console.error(`❌ Error al enviar pedido: Código ${res.status}`);
+      return;
+    }
+
+    const resultado = await res.json();
+    console.log("✔ Pedido guardado con éxito:", resultado);
+  } catch (err) {
+    console.error("❌ Error al conectar con el servidor:", err.message);
+  }
+}
+
 
   delete timers[index];
 }
