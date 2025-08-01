@@ -194,25 +194,25 @@ async function finalizar(index) {
   const duracionMs = now.getTime() - data.startTimestamp - data.pausedDuration;
   const minutosTotales = duracionMs / 60000;
 
- let tiempoFormateado = "0";
-let tiempoitms = "00:00:00"; // para enviar a la API
+  let tiempoFormateado = "0";
+  let tiempoitms = "00:00:00";
 
-if (cantidadSacada > 0) {
-  const tiempoPorProducto = minutosTotales / cantidadSacada;
-  const tiempoPorProductoMs = (duracionMs / cantidadSacada);
+  if (cantidadSacada > 0) {
+    const tiempoPorProducto = minutosTotales / cantidadSacada;
+    const tiempoPorProductoMs = duracionMs / cantidadSacada;
 
-  if (tiempoPorProducto >= 1) {
-    const minutosRedondeados = Math.round(tiempoPorProducto);
-    tiempoFormateado = `${minutosRedondeados} min${minutosRedondeados === 1 ? "" : "s"} /prod`;
-  } else {
-    const segundosPorProducto = Math.round(tiempoPorProducto * 60);
-    tiempoFormateado = `${segundosPorProducto} seg${segundosPorProducto === 1 ? "" : "s"} /prod`;
+    // Convertir tiempo por producto a formato TimeOnly (HH:mm:ss)
+    const tppDate = new Date(tiempoPorProductoMs);
+    tiempoitms = tppDate.toISOString().substr(11, 8);
+
+    if (tiempoPorProducto >= 1) {
+      const minutosRedondeados = Math.round(tiempoPorProducto);
+      tiempoFormateado = `${minutosRedondeados} min${minutosRedondeados === 1 ? "" : "s"} /prod`;
+    } else {
+      const segundosPorProducto = Math.round(tiempoPorProducto * 60);
+      tiempoFormateado = `${segundosPorProducto} seg${segundosPorProducto === 1 ? "" : "s"} /prod`;
+    }
   }
-
-  // Formato para la API (HH:mm:ss)
-  const date = new Date(tiempoPorProductoMs);
-  tiempoitms = date.toISOString().substr(11, 8);
-}
 
   document.getElementById(`end-${index}`).textContent = now.toLocaleDateString();
   document.getElementById(`tpp-${index}`).textContent = tiempoFormateado;
@@ -235,8 +235,6 @@ if (cantidadSacada > 0) {
   data.endTimestamp = now.getTime();
   data.tiempoPorProducto = tiempoFormateado;
 
-  guardarPedidos();
-
   const pedidoData = {
     pedido: parseInt(data.codigo),
     sacador: data.sacador,
@@ -244,17 +242,13 @@ if (cantidadSacada > 0) {
     horaInicio: new Date(data.startTimestamp).toISOString(),
     horaFin: new Date(data.endTimestamp).toISOString(),
     tiempoTotalSegundos: Math.floor(duracionMs / 1000),
-    tiempoitms: tiempoFormateado
+    tiempoitms: tiempoitms  // ✅ esto es lo que el backend espera
   };
 
-  console.log("Datos a enviar:", pedidoData); // <-- Esto te ayudará a debuggear
-
+  console.log("Datos a enviar:", pedidoData);
   await enviarApi(pedidoData);
-
-  delete timers[index];
-
-  alert(`${data.sacador} sacó un ${porcentaje}% del pedido.\nTiempo por producto: ${tiempoFormateado}`);
 }
+
 
 
 async function enviarApi(pedidoData) {
