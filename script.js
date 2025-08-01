@@ -194,17 +194,25 @@ async function finalizar(index) {
   const duracionMs = now.getTime() - data.startTimestamp - data.pausedDuration;
   const minutosTotales = duracionMs / 60000;
 
-  let tiempoFormateado = "0";
-  if (cantidadSacada > 0) {
-    const tiempoPorProducto = minutosTotales / cantidadSacada;
-    if (tiempoPorProducto >= 1) {
-      const minutosRedondeados = Math.round(tiempoPorProducto);
-      tiempoFormateado = `${minutosRedondeados} min${minutosRedondeados === 1 ? "" : "s"} /prod`;
-    } else {
-      const segundosPorProducto = Math.round(tiempoPorProducto * 60);
-      tiempoFormateado = `${segundosPorProducto} seg${segundosPorProducto === 1 ? "" : "s"} /prod`;
-    }
+ let tiempoFormateado = "0";
+let tiempoitms = "00:00:00"; // para enviar a la API
+
+if (cantidadSacada > 0) {
+  const tiempoPorProducto = minutosTotales / cantidadSacada;
+  const tiempoPorProductoMs = (duracionMs / cantidadSacada);
+
+  if (tiempoPorProducto >= 1) {
+    const minutosRedondeados = Math.round(tiempoPorProducto);
+    tiempoFormateado = `${minutosRedondeados} min${minutosRedondeados === 1 ? "" : "s"} /prod`;
+  } else {
+    const segundosPorProducto = Math.round(tiempoPorProducto * 60);
+    tiempoFormateado = `${segundosPorProducto} seg${segundosPorProducto === 1 ? "" : "s"} /prod`;
   }
+
+  // Formato para la API (HH:mm:ss)
+  const date = new Date(tiempoPorProductoMs);
+  tiempoitms = date.toISOString().substr(11, 8);
+}
 
   document.getElementById(`end-${index}`).textContent = now.toLocaleDateString();
   document.getElementById(`tpp-${index}`).textContent = tiempoFormateado;
