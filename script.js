@@ -184,7 +184,6 @@ async function finalizar(index) {
   const data = pausedTimers[index];
   const total = data.cantidad;
 
-  // Preguntar cantidad sacada y validar
   const cantidadSacada = parseInt(prompt(`¿Cuántos productos se sacaron del pedido? (Esperado: ${total})`), 10);
   if (isNaN(cantidadSacada) || cantidadSacada < 0 || cantidadSacada > total) {
     alert("Cantidad inválida.");
@@ -195,7 +194,6 @@ async function finalizar(index) {
   const duracionMs = now.getTime() - data.startTimestamp - data.pausedDuration;
   const minutosTotales = duracionMs / 60000;
 
-  // Calcular tiempo por producto formateado
   let tiempoFormateado = "0";
   if (cantidadSacada > 0) {
     const tiempoPorProducto = minutosTotales / cantidadSacada;
@@ -208,7 +206,6 @@ async function finalizar(index) {
     }
   }
 
-  // Actualizar interfaz
   document.getElementById(`end-${index}`).textContent = now.toLocaleDateString();
   document.getElementById(`tpp-${index}`).textContent = tiempoFormateado;
 
@@ -232,7 +229,6 @@ async function finalizar(index) {
 
   guardarPedidos();
 
-  // Preparar datos para enviar a la API
   const pedidoData = {
     pedido: parseInt(data.codigo),
     sacador: data.sacador,
@@ -243,13 +239,15 @@ async function finalizar(index) {
     tiempoitms: tiempoFormateado
   };
 
-  // Enviar datos a la API
+  console.log("Datos a enviar:", pedidoData); // <-- Esto te ayudará a debuggear
+
   await enviarApi(pedidoData);
 
   delete timers[index];
 
   alert(`${data.sacador} sacó un ${porcentaje}% del pedido.\nTiempo por producto: ${tiempoFormateado}`);
 }
+
 
 async function enviarApi(pedidoData) {
   const apiUrl = "https://api-showcustomer-dpbwdsekb5apc2cy.canadacentral-01.azurewebsites.net/api/Pedidos/Crear";
