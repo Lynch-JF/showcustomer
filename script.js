@@ -394,4 +394,4 @@ function verificarMesActual() {
   }
 }
 
-enviarApi(pedidoData);
+//enviarApi(pedidoData);
