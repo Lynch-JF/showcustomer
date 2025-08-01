@@ -176,18 +176,15 @@ function autoReanudar(index) {
   }
 }
 
-function finalizar(index) {
+async function finalizar(index) {
   const now = new Date();
-
-  // ✅ Formato de fecha corta:
-  const fechaCorta = now.toLocaleDateString(); 
-  document.getElementById(`end-${index}`).textContent = fechaCorta;
 
   clearInterval(timers[index]);
 
   const data = pausedTimers[index];
   const total = data.cantidad;
 
+  // Preguntar cantidad sacada y validar
   const cantidadSacada = parseInt(prompt(`¿Cuántos productos se sacaron del pedido? (Esperado: ${total})`), 10);
   if (isNaN(cantidadSacada) || cantidadSacada < 0 || cantidadSacada > total) {
     alert("Cantidad inválida.");
@@ -198,24 +195,22 @@ function finalizar(index) {
   const duracionMs = now.getTime() - data.startTimestamp - data.pausedDuration;
   const minutosTotales = duracionMs / 60000;
 
+  // Calcular tiempo por producto formateado
   let tiempoFormateado = "0";
-
-if (cantidadSacada > 0) {
-  const tiempoPorProducto = minutosTotales / cantidadSacada;
-
-  if (tiempoPorProducto >= 1) {
-    const minutosRedondeados = Math.round(tiempoPorProducto);
-    tiempoFormateado = `${minutosRedondeados} min${minutosRedondeados === 1 ? "" : "s"} /prod`;
-  } else {
-    const segundosPorProducto = Math.round(tiempoPorProducto * 60);
-    tiempoFormateado = `${segundosPorProducto} seg${segundosPorProducto === 1 ? "" : "s"} /prod`;
+  if (cantidadSacada > 0) {
+    const tiempoPorProducto = minutosTotales / cantidadSacada;
+    if (tiempoPorProducto >= 1) {
+      const minutosRedondeados = Math.round(tiempoPorProducto);
+      tiempoFormateado = `${minutosRedondeados} min${minutosRedondeados === 1 ? "" : "s"} /prod`;
+    } else {
+      const segundosPorProducto = Math.round(tiempoPorProducto * 60);
+      tiempoFormateado = `${segundosPorProducto} seg${segundosPorProducto === 1 ? "" : "s"} /prod`;
+    }
   }
-}
 
-  // ✅ Mostrar en pantalla
+  // Actualizar interfaz
+  document.getElementById(`end-${index}`).textContent = now.toLocaleDateString();
   document.getElementById(`tpp-${index}`).textContent = tiempoFormateado;
-
-  alert(`${data.sacador} sacó un ${porcentaje}% del pedido.\nTiempo por producto: ${tiempoFormateado}`);
 
   const task = document.getElementById(`codigo-${index}`).closest(".task");
   task.style.backgroundColor = "#d4edda";
@@ -234,22 +229,31 @@ if (cantidadSacada > 0) {
   data.finalizado = true;
   data.endTimestamp = now.getTime();
   data.tiempoPorProducto = tiempoFormateado;
+
   guardarPedidos();
 
+  // Preparar datos para enviar a la API
   const pedidoData = {
-  pedido: parseInt(data.codigo), // "Codigo P" → pedido
-  sacador: data.sacador,         // "Sacador " → sacador
-  cantidad_items: parseInt(data.cantidad), // "CantidadProductos " → cantidad_items
-  horaInicio: new Date(data.startTimestamp).toISOString(), // "HoraInicio "
-  horaFin: new Date(data.endTimestamp).toISOString(),      // "HoraFin "
-  tiempoTotalSegundos: Math.floor(duracionMs / 1000), // "TiempoTotal " → en segundos
-  tiempoitms: tiempoFormateado  // Ej: "00:43"
-};
+    pedido: parseInt(data.codigo),
+    sacador: data.sacador,
+    cantidad_items: parseInt(data.cantidad),
+    horaInicio: new Date(data.startTimestamp).toISOString(),
+    horaFin: new Date(data.endTimestamp).toISOString(),
+    tiempoTotalSegundos: Math.floor(duracionMs / 1000),
+    tiempoitms: tiempoFormateado
+  };
+
+  // Enviar datos a la API
+  await enviarApi(pedidoData);
+
+  delete timers[index];
+
+  alert(`${data.sacador} sacó un ${porcentaje}% del pedido.\nTiempo por producto: ${tiempoFormateado}`);
+}
 
 async function enviarApi(pedidoData) {
-  const apiUrl = "https://localhost:7053/api/Pedidos/Crear";
+  const apiUrl = "https://api-showcustomer-dpbwdsekb5apc2cy.canadacentral-01.azurewebsites.net/api/Pedidos/Crear";
 
-  // Validar si la URL comienza con HTTPS
   if (!apiUrl.startsWith("https://")) {
     console.error("❌ Error: La URL no es segura (HTTPS requerido)");
     return;
@@ -258,9 +262,7 @@ async function enviarApi(pedidoData) {
   try {
     const res = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(pedidoData)
     });
 
@@ -277,8 +279,6 @@ async function enviarApi(pedidoData) {
 }
 
 
-  delete timers[index];
-}
 
 function eliminar(index) {
   delete pausedTimers[index];
@@ -387,3 +387,5 @@ function verificarMesActual() {
     localStorage.setItem(claveMes, mesActual);
   }
 }
+
+enviarApi(pedidoData);
